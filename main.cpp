@@ -33,7 +33,8 @@ int read() {
     int x = 0, f = 1;
     char ch = getchar();
     while (ch < '0' || ch > '9') {
-        if (ch == '-') f = -1;
+        if (ch == '-')
+            f = -1;
         ch = getchar();
     }
     while (ch >= '0' && ch <= '9') {
@@ -77,19 +78,25 @@ void pre_process() {
 }
 
 void assign_core() {
+    /**
+     * 分配核心
+     * 1. 按照用户实例的总执行时间从小到大排序
+     * 2. 从小到大遍历用户实例，依次分配到核心上，尽量使得每个核心的总执行时间接近，如果将要超时则优寻找下一个核心
+     */
     cores2usrInst.assign(m, vector<int>());
     vector<int> sorted_usrInst(MAX_USER_ID);
     iota(sorted_usrInst.begin(), sorted_usrInst.end(), 0);
-    sort(sorted_usrInst.begin(), sorted_usrInst.end(), [](int a, int b) {
-        return usrInst2totalTime[a] < usrInst2totalTime[b];
-    });
+    sort(sorted_usrInst.begin(), sorted_usrInst.end(),
+         [](int a, int b) { return usrInst2totalTime[a] < usrInst2totalTime[b]; });
 
     int current_core = 0;
     vector<int> cores2totalTime(m, 0);
 
     for (int usrInst: sorted_usrInst) {
-        if (usrInst2tasks[usrInst].empty()) continue;
+        if (usrInst2tasks[usrInst].empty())
+            continue;
         for (int i = 0; i < m; ++i) {
+            // 其实根据测试数据，没有出现超时的情况，不知道最后的数据会不会出现超时的情况
             if (cores2totalTime[current_core] > c) {
                 current_core = (current_core + 1) % m;
                 continue;
@@ -103,6 +110,10 @@ void assign_core() {
 }
 
 struct TaskHeap {
+    /**
+     * 自定义堆，用于维护任务队列
+     * 主要由于需要动态更新上一个任务的类型当前核的总执行时间，需要动态的cmp
+     */
 
     vector<MessageTask> queue;
     int core_task_type;
@@ -117,19 +128,33 @@ struct TaskHeap {
     }
 
     bool cmp(const MessageTask &a, const MessageTask &b) {
+        // 最后这里调整各个顺序尝试后提高了几万分
+
         // 优先级：1. 任务类型 2. 是否超时
-        if (a.msgType == core_task_type) return true;
-        if (b.msgType == core_task_type) return false;
-        if (a.isOverTime) return false;
-        if (b.isOverTime) return true;
+        if (b.msgType == core_task_type)
+            return false;
+        if (a.msgType == core_task_type)
+            return true;
+
+        if (a.isOverTime)
+            return false;
+
+        if (b.isOverTime)
+            return true;
+
         // 将要超时
-        if (a.deadLine <= core_time + a.exeTime) return true;
-        if (b.deadLine <= core_time + b.exeTime) return false;
+        // 组员发现这里注释掉后分数会更高，总之因为没有新想法了所以在乱试
+        /* if (a.deadLine <= core_time + a.exeTime)
+            return true;
+        if (b.deadLine <= core_time + b.exeTime)
+            return false; */
         return a.deadLine < b.deadLine;
     }
 
+    // 重新建堆
     void re_heapify() {
-        if (!need_re_heapify) return;
+        if (!need_re_heapify)
+            return;
         need_re_heapify = false;
         for (int i = queue.size() / 2; i >= 0; --i) {
             heapify_down(i);
@@ -148,6 +173,7 @@ struct TaskHeap {
         }
     }
 
+    // 向下调整
     void heapify_down(int idx) {
         while (idx < queue.size()) {
             int left = 2 * idx + 1;
@@ -185,11 +211,14 @@ struct TaskHeap {
     }
 
     void change_core_task_type(int task_type) {
-        if (core_task_type != task_type) need_re_heapify = true;
+        if (core_task_type != task_type)
+            need_re_heapify = true;
         core_task_type = task_type;
     }
 
     void change_core_time(int time) {
+        // 这里没加判断是怕超时，同时总执行时间是每次一定会变的，从而每次都要重新建堆
+        // 一开始是因为超时没加，后来忘了这块了，可能加上后分数会更高
         core_time = time;
     }
 };
@@ -221,10 +250,15 @@ void assign_tasks() {
 }
 
 void main_task() {
+    // 读取输入
     get_input();
+    // 预处理，计算每个用户实例的总执行时间和是否一定超时
     pre_process();
+    // 分配核心，将用户实例分配到核心上
     assign_core();
+    // 分配任务，将任务分配到核心上
     assign_tasks();
+    // 输出结果
     output_result();
 }
 
