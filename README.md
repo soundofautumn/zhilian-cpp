@@ -31,6 +31,6 @@ AI模型在model文件夹下，训练太烂的，最后准确率也就个68%，�
 
 ## 附录
 
-AI赛道第一名（98.4%准确率）：[Wireless-program](https://github.com/lzglzglzglzg/Wireless-program)
+AI赛道第一名（98.4%准确率）：[Wireless-program](https://github.com/aqizhoua/Wireless-program)
 
 调度算法第一名：[-](https://github.com/lxj2389287408/-)
